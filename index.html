@@ -23,8 +23,8 @@
     .controls {
         margin-top: 15px;
         display: grid;
-        grid-template-columns: 60px 60px 60px;
-        grid-template-rows: 60px 60px 60px;
+        grid-template-columns: 1fr 1fr 1fr;
+        grid-template-rows: auto auto auto;
         gap: 10px;
         justify-content: center;
     }
@@ -32,12 +32,19 @@
         background: rgba(0,255,0,0.2);
         border: 2px solid lime;
         border-radius: 12px;
-        font-size: 24px;
+        font-size: 6vw;   /* chữ to theo màn hình */
         color: white;
         text-align: center;
         line-height: 60px;
         user-select: none;
         cursor: pointer;
+        width: 15vw;
+        height: 15vw;
+        max-width: 70px;
+        max-height: 70px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
     }
     .btn:active {
         background: rgba(0,255,0,0.5);
@@ -67,27 +74,9 @@ const canvas = document.getElementById("gameCanvas");
 const ctx = canvas.getContext("2d");
 const stepSound = document.getElementById("stepSound");
 
-// === Điều chỉnh kích thước theo thiết bị ===
 let rows = 20;
 let cols = 20;
 let tileSize;
-
-// Nếu màn hình nhỏ (điện thoại) thì giảm kích cỡ
-// Canvas tự co theo màn hình
-let screenW = window.innerWidth;
-let screenH = window.innerHeight;
-
-// Lấy kích thước nhỏ hơn giữa ngang & dọc (để vừa màn hình)
-let canvasSize = Math.min(screenW * 0.9, screenH * 0.6);
-
-// Làm cho canvas thành hình vuông
-canvas.width = canvasSize;
-canvas.height = canvasSize;
-
-// Tính lại tileSize theo số cột
-tileSize = Math.floor(canvas.width / cols);
-
-
 let maze = [];
 let visited = [];
 
@@ -96,6 +85,25 @@ let player = { x: 1, y: 1, px: 1, py: 1, moving: false, tx: 1, ty: 1, speed: 0.2
 
 // Exit
 let exit = { x: cols-2, y: 1 };
+
+// === Resize canvas theo màn hình ===
+function resizeCanvas() {
+    let screenW = window.innerWidth;
+    let screenH = window.innerHeight;
+
+    // Chiếm 90% chiều ngang, 70% chiều cao
+    let canvasSize = Math.min(screenW * 0.9, screenH * 0.7);
+
+    canvas.width = canvasSize;
+    canvas.height = canvasSize;
+
+    tileSize = Math.floor(canvas.width / cols);
+}
+resizeCanvas();
+window.addEventListener("resize", () => {
+    resizeCanvas();
+    drawMaze(); // vẽ lại khi xoay màn hình
+});
 
 // Key input
 document.addEventListener("keydown", (e) => moveCommand(e.key.toLowerCase()));
@@ -142,7 +150,7 @@ function drawMaze() {
     // Player
     ctx.fillStyle="lime";
     ctx.beginPath(); 
-    ctx.arc(player.px*tileSize+tileSize/2, player.py*tileSize+tileSize/2, 10, 0, Math.PI*2); 
+    ctx.arc(player.px*tileSize+tileSize/2, player.py*tileSize+tileSize/2, tileSize/3, 0, Math.PI*2); 
     ctx.fill();
 }
 
@@ -212,4 +220,3 @@ gameLoop();
 </script>
 </body>
 </html>
-
