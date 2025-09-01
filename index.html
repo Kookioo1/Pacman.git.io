@@ -35,7 +35,7 @@
         background: rgba(0,255,0,0.2);
         border: 2px solid lime;
         border-radius: 12px;
-        font-size: 6vw;   /* chữ to theo màn hình */
+        font-size: 6vw;
         color: white;
         user-select: none;
         cursor: pointer;
@@ -46,25 +46,44 @@
         display: flex;
         justify-content: center;
         align-items: center;
+        transition: transform 0.1s; /* Hiệu ứng nhấn mượt hơn */
     }
     .btn:active {
         background: rgba(0,255,0,0.5);
+        transform: scale(0.95); /* Hiệu ứng co lại khi nhấn */
+    }
+    
+    /* Media Query cho màn hình di động */
+    @media (max-width: 768px) {
+        body {
+            height: auto; /* Cho phép cuộn */
+            min-height: 100vh;
+        }
+        .controls {
+            gap: 15px;
+        }
+        .btn {
+            width: 18vw;
+            height: 18vw;
+            max-width: 80px;
+            max-height: 80px;
+            font-size: 8vw;
+        }
     }
 </style>
 </head>
 <body>
 <canvas id="gameCanvas"></canvas>
 
-<!-- Nút điều khiển ảo -->
 <div class="controls">
     <div></div>
-    <div class="btn" onclick="moveCommand('w')">↑</div>
+    <div class="btn" id="btn-up" onclick="moveCommand('w')">↑</div>
     <div></div>
-    <div class="btn" onclick="moveCommand('a')">←</div>
+    <div class="btn" id="btn-left" onclick="moveCommand('a')">←</div>
     <div></div>
-    <div class="btn" onclick="moveCommand('d')">→</div>
+    <div class="btn" id="btn-right" onclick="moveCommand('d')">→</div>
     <div></div>
-    <div class="btn" onclick="moveCommand('s')">↓</div>
+    <div class="btn" id="btn-down" onclick="moveCommand('s')">↓</div>
     <div></div>
 </div>
 
@@ -92,19 +111,25 @@ function resizeCanvas() {
     let screenW = window.innerWidth;
     let screenH = window.innerHeight;
 
-    // Chiếm 90% chiều ngang, 70% chiều cao
     let canvasSize = Math.min(screenW * 0.9, screenH * 0.7);
+
+    let oldTileSize = tileSize;
 
     canvas.width = canvasSize;
     canvas.height = canvasSize;
 
     tileSize = Math.floor(canvas.width / cols);
+
+    // Cập nhật vị trí của người chơi dựa trên tỷ lệ thay đổi của tileSize
+    if (oldTileSize && tileSize !== oldTileSize) {
+        player.px = (player.x) * tileSize;
+        player.py = (player.y) * tileSize;
+    }
+    
+    drawMaze();
 }
 resizeCanvas();
-window.addEventListener("resize", () => {
-    resizeCanvas();
-    drawMaze(); // vẽ lại khi xoay màn hình
-});
+window.addEventListener("resize", resizeCanvas);
 
 // Key input
 document.addEventListener("keydown", (e) => moveCommand(e.key.toLowerCase()));
@@ -150,12 +175,12 @@ function drawMaze() {
     }
     // Player
     ctx.fillStyle="lime";
-    ctx.beginPath(); 
-    ctx.arc(player.px*tileSize+tileSize/2, player.py*tileSize+tileSize/2, tileSize/3, 0, Math.PI*2); 
+    ctx.beginPath();
+    ctx.arc(player.px + tileSize/2, player.py + tileSize/2, tileSize/3, 0, Math.PI*2);
     ctx.fill();
 }
 
-// === Move Command (slide until wall) ===
+// === Move Command (di chuyển từng ô một) ===
 function moveCommand(key){
     if (player.moving) return;
 
@@ -166,21 +191,14 @@ function moveCommand(key){
     if(key==="d") dx=1;
     if(dx===0 && dy===0) return;
 
-    let nx = player.x;
-    let ny = player.y;
-
-    while(maze[ny+dy] && maze[ny+dy][nx+dx] && maze[ny+dy][nx+dx] !== "#"){
-        nx += dx;
-        ny += dy;
-        if (maze[ny][nx]==="G"){ player.gold++; maze[ny][nx]="."; }
-        if (maze[ny][nx]==="E"){ alert("🎉 Thoát! Vàng: "+player.gold); document.location.reload(); }
-    }
-
-    if(nx!==player.x || ny!==player.y){
+    let nx = player.x + dx;
+    let ny = player.y + dy;
+    
+    if (maze[ny] && maze[ny][nx] && maze[ny][nx] !== "#") {
         player.tx = nx;
         player.ty = ny;
         player.moving = true;
-        stepSound.loop=true;
+        stepSound.loop = false;
         stepSound.play();
     }
 }
@@ -188,23 +206,26 @@ function moveCommand(key){
 // === Update Player Movement (smooth animation) ===
 function updatePlayer(){
     if(player.moving){
-        let dx = player.tx - player.px;
-        let dy = player.ty - player.py;
+        let dx = (player.tx * tileSize) - player.px;
+        let dy = (player.ty * tileSize) - player.py;
 
-        if(Math.abs(dx)>player.speed) player.px += Math.sign(dx)*player.speed;
-        else player.px = player.tx;
+        if(Math.abs(dx)>player.speed*tileSize) player.px += Math.sign(dx)*player.speed*tileSize;
+        else player.px = player.tx * tileSize;
 
-        if(Math.abs(dy)>player.speed) player.py += Math.sign(dy)*player.speed;
-        else player.py = player.ty;
+        if(Math.abs(dy)>player.speed*tileSize) player.py += Math.sign(dy)*player.speed*tileSize;
+        else player.py = player.ty * tileSize;
 
-        if(Math.abs(player.px - player.tx)<0.01 && Math.abs(player.py - player.ty)<0.01){
-            player.px = player.tx;
-            player.py = player.ty;
+        if(Math.abs(player.px - player.tx*tileSize)<0.01 && Math.abs(player.py - player.ty*tileSize)<0.01){
+            player.px = player.tx * tileSize;
+            player.py = player.ty * tileSize;
             player.x = player.tx;
             player.y = player.ty;
             player.moving = false;
             stepSound.pause();
             stepSound.currentTime = 0;
+
+            if (maze[player.y][player.x] === "G"){ player.gold++; maze[player.y][player.x]="."; }
+            if (maze[player.y][player.x] === "E"){ alert("🎉 Thoát! Vàng: "+player.gold); document.location.reload(); }
         }
     }
 }
