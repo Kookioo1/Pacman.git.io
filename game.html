@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Maze Escape Game</title>
+<style>
+    body {
+        margin: 0;
+        background: black;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        flex-direction: column;
+    }
+    canvas {
+        background: #0a0030;
+        border: 3px solid lime;
+        box-shadow: 0 0 25px lime;
+        touch-action: none;
+    }
+    .controls {
+        margin-top: 15px;
+        display: grid;
+        grid-template-columns: 60px 60px 60px;
+        grid-template-rows: 60px 60px 60px;
+        gap: 10px;
+        justify-content: center;
+    }
+    .btn {
+        background: rgba(0,255,0,0.2);
+        border: 2px solid lime;
+        border-radius: 12px;
+        font-size: 24px;
+        color: white;
+        text-align: center;
+        line-height: 60px;
+        user-select: none;
+        cursor: pointer;
+    }
+    .btn:active {
+        background: rgba(0,255,0,0.5);
+    }
+</style>
+</head>
+<body>
+<canvas id="gameCanvas" width="600" height="600"></canvas>
+
+<!-- Nút điều khiển ảo -->
+<div class="controls">
+    <div></div>
+    <div class="btn" onclick="moveCommand('w')">↑</div>
+    <div></div>
+    <div class="btn" onclick="moveCommand('a')">←</div>
+    <div></div>
+    <div class="btn" onclick="moveCommand('d')">→</div>
+    <div></div>
+    <div class="btn" onclick="moveCommand('s')">↓</div>
+    <div></div>
+</div>
+
+<audio id="stepSound" src="https://actions.google.com/sounds/v1/foley/footstep_grass.ogg"></audio>
+
+<script>
+const canvas = document.getElementById("gameCanvas");
+const ctx = canvas.getContext("2d");
+const stepSound = document.getElementById("stepSound");
+
+const tileSize = 30;
+const rows = 20;
+const cols = 20;
+
+let maze = [];
+let visited = [];
+
+// Player
+let player = { x: 1, y: 1, px: 1, py: 1, moving: false, tx: 1, ty: 1, speed: 0.2, gold: 0 };
+
+// Exit
+let exit = { x: cols-2, y: 1 };
+
+// Key input
+document.addEventListener("keydown", (e) => moveCommand(e.key.toLowerCase()));
+
+// === Maze generator (DFS) ===
+function generateMaze() {
+    maze = Array.from({length: rows}, () => Array(cols).fill("#"));
+    visited = Array.from({length: rows}, () => Array(cols).fill(false));
+
+    function carve(x, y) {
+        visited[y][x] = true;
+        maze[y][x] = ".";
+        let directions = [{x:0,y:-2},{x:0,y:2},{x:-2,y:0},{x:2,y:0}];
+        directions.sort(() => Math.random() - 0.5);
+        for (let dir of directions) {
+            let nx = x + dir.x;
+            let ny = y + dir.y;
+            if (ny > 0 && ny < rows-1 && nx > 0 && nx < cols-1 && !visited[ny][nx]) {
+                maze[y+dir.y/2][x+dir.x/2] = ".";
+                carve(nx, ny);
+            }
+        }
+    }
+    carve(1,1);
+
+    maze[exit.y][exit.x] = "E";
+    for (let i=0;i<15;i++){
+        let gx=Math.floor(Math.random()*cols), gy=Math.floor(Math.random()*rows);
+        if(maze[gy][gx]===".") maze[gy][gx]="G";
+    }
+}
+
+// === Draw Maze ===
+function drawMaze() {
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    for(let y=0;y<rows;y++){
+        for(let x=0;x<cols;x++){
+            if(maze[y][x]==="#"){ ctx.fillStyle="#222"; ctx.fillRect(x*tileSize,y*tileSize,tileSize,tileSize);}
+            else if(maze[y][x]==="."){ ctx.fillStyle="#111"; ctx.fillRect(x*tileSize,y*tileSize,tileSize,tileSize);}
+            else if(maze[y][x]==="G"){ ctx.fillStyle="gold"; ctx.beginPath(); ctx.arc(x*tileSize+tileSize/2,y*tileSize+tileSize/2,8,0,Math.PI*2); ctx.fill();}
+            else if(maze[y][x]==="E"){ ctx.fillStyle="cyan"; ctx.fillRect(x*tileSize,y*tileSize,tileSize,tileSize);}
+        }
+    }
+    // Player
+    ctx.fillStyle="lime";
+    ctx.beginPath(); 
+    ctx.arc(player.px*tileSize+tileSize/2, player.py*tileSize+tileSize/2, 10, 0, Math.PI*2); 
+    ctx.fill();
+}
+
+// === Move Command (slide until wall) ===
+function moveCommand(key){
+    if (player.moving) return;
+
+    let dx=0, dy=0;
+    if(key==="w") dy=-1;
+    if(key==="s") dy=1;
+    if(key==="a") dx=-1;
+    if(key==="d") dx=1;
+    if(dx===0 && dy===0) return;
+
+    let nx = player.x;
+    let ny = player.y;
+
+    while(maze[ny+dy] && maze[ny+dy][nx+dx] && maze[ny+dy][nx+dx] !== "#"){
+        nx += dx;
+        ny += dy;
+        if (maze[ny][nx]==="G"){ player.gold++; maze[ny][nx]="."; }
+        if (maze[ny][nx]==="E"){ alert("🎉 Thoát! Vàng: "+player.gold); document.location.reload(); }
+    }
+
+    if(nx!==player.x || ny!==player.y){
+        player.tx = nx;
+        player.ty = ny;
+        player.moving = true;
+        stepSound.loop=true;
+        stepSound.play();
+    }
+}
+
+// === Update Player Movement (smooth animation) ===
+function updatePlayer(){
+    if(player.moving){
+        let dx = player.tx - player.px;
+        let dy = player.ty - player.py;
+
+        if(Math.abs(dx)>player.speed) player.px += Math.sign(dx)*player.speed;
+        else player.px = player.tx;
+
+        if(Math.abs(dy)>player.speed) player.py += Math.sign(dy)*player.speed;
+        else player.py = player.ty;
+
+        if(player.px===player.tx && player.py===player.ty){
+            player.x = player.tx;
+            player.y = player.ty;
+            player.moving = false;
+            stepSound.pause();
+            stepSound.currentTime = 0;
+        }
+    }
+}
+
+// === Game Loop ===
+function gameLoop(){
+    updatePlayer();
+    drawMaze();
+    requestAnimationFrame(gameLoop);
+}
+
+generateMaze();
+gameLoop();
+</script>
+</body>
+</html>
