@@ -19,6 +19,9 @@
         border: 3px solid lime;
         box-shadow: 0 0 25px lime;
         touch-action: none;
+        max-width: 100%;
+        height: auto;
+        display: block;
     }
     .controls {
         margin-top: 15px;
@@ -34,8 +37,6 @@
         border-radius: 12px;
         font-size: 6vw;   /* chữ to theo màn hình */
         color: white;
-        text-align: center;
-        line-height: 60px;
         user-select: none;
         cursor: pointer;
         width: 15vw;
@@ -143,7 +144,7 @@ function drawMaze() {
         for(let x=0;x<cols;x++){
             if(maze[y][x]==="#"){ ctx.fillStyle="#222"; ctx.fillRect(x*tileSize,y*tileSize,tileSize,tileSize);}
             else if(maze[y][x]==="."){ ctx.fillStyle="#111"; ctx.fillRect(x*tileSize,y*tileSize,tileSize,tileSize);}
-            else if(maze[y][x]==="G"){ ctx.fillStyle="gold"; ctx.beginPath(); ctx.arc(x*tileSize+tileSize/2,y*tileSize+tileSize/2,8,0,Math.PI*2); ctx.fill();}
+            else if(maze[y][x]==="G"){ ctx.fillStyle="gold"; ctx.beginPath(); ctx.arc(x*tileSize+tileSize/2,y*tileSize+tileSize/2,tileSize/4,0,Math.PI*2); ctx.fill();}
             else if(maze[y][x]==="E"){ ctx.fillStyle="cyan"; ctx.fillRect(x*tileSize,y*tileSize,tileSize,tileSize);}
         }
     }
