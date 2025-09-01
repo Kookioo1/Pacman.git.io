@@ -45,7 +45,7 @@
 </style>
 </head>
 <body>
-<canvas id="gameCanvas" width="600" height="600"></canvas>
+<canvas id="gameCanvas"></canvas>
 
 <!-- Nút điều khiển ảo -->
 <div class="controls">
@@ -67,9 +67,21 @@ const canvas = document.getElementById("gameCanvas");
 const ctx = canvas.getContext("2d");
 const stepSound = document.getElementById("stepSound");
 
-const tileSize = 30;
-const rows = 20;
-const cols = 20;
+// === Điều chỉnh kích thước theo thiết bị ===
+let rows = 20;
+let cols = 20;
+let tileSize;
+
+// Nếu màn hình nhỏ (điện thoại) thì giảm kích cỡ
+if (window.innerWidth < 500) {
+    canvas.width = 360;
+    canvas.height = 360;
+    tileSize = Math.floor(canvas.width / cols); 
+} else {
+    canvas.width = 600;
+    canvas.height = 600;
+    tileSize = Math.floor(canvas.width / cols);
+}
 
 let maze = [];
 let visited = [];
@@ -171,7 +183,9 @@ function updatePlayer(){
         if(Math.abs(dy)>player.speed) player.py += Math.sign(dy)*player.speed;
         else player.py = player.ty;
 
-        if(player.px===player.tx && player.py===player.ty){
+        if(Math.abs(player.px - player.tx)<0.01 && Math.abs(player.py - player.ty)<0.01){
+            player.px = player.tx;
+            player.py = player.ty;
             player.x = player.tx;
             player.y = player.ty;
             player.moving = false;
