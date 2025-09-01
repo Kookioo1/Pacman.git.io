@@ -13,13 +13,14 @@
         align-items: center;
         height: 100vh;
         flex-direction: column;
+        font-family: Arial, sans-serif;
     }
     canvas {
         background: #0a0030;
         border: 3px solid lime;
         box-shadow: 0 0 25px lime;
         touch-action: none;
-        max-width: auto;
+        max-width: 100%;
         height: auto;
         display: block;
     }
@@ -46,17 +47,17 @@
         display: flex;
         justify-content: center;
         align-items: center;
-        transition: transform 0.1s; /* Hiệu ứng nhấn mượt hơn */
+        transition: transform 0.1s;
     }
     .btn:active {
         background: rgba(0,255,0,0.5);
-        transform: scale(0.95); /* Hiệu ứng co lại khi nhấn */
+        transform: scale(0.95);
     }
-    
+
     /* Media Query cho màn hình di động */
     @media (max-width: 768px) {
         body {
-            height: auto; /* Cho phép cuộn */
+            height: auto;
             min-height: 100vh;
         }
         .controls {
@@ -77,13 +78,13 @@
 
 <div class="controls">
     <div></div>
-    <div class="btn" id="btn-up" onclick="moveCommand('w')">↑</div>
+    <div class="btn" onclick="moveCommand('w')">↑</div>
     <div></div>
-    <div class="btn" id="btn-left" onclick="moveCommand('a')">←</div>
+    <div class="btn" onclick="moveCommand('a')">←</div>
     <div></div>
-    <div class="btn" id="btn-right" onclick="moveCommand('d')">→</div>
+    <div class="btn" onclick="moveCommand('d')">→</div>
     <div></div>
-    <div class="btn" id="btn-down" onclick="moveCommand('s')">↓</div>
+    <div class="btn" onclick="moveCommand('s')">↓</div>
     <div></div>
 </div>
 
@@ -101,7 +102,7 @@ let maze = [];
 let visited = [];
 
 // Player
-let player = { x: 1, y: 1, px: 1, py: 1, moving: false, tx: 1, ty: 1, speed: 0.2, gold: 0 };
+let player = { x: 1, y: 1, px: 0, py: 0, moving: false, tx: 1, ty: 1, speed: 0.2, gold: 0 };
 
 // Exit
 let exit = { x: cols-2, y: 1 };
@@ -110,22 +111,23 @@ let exit = { x: cols-2, y: 1 };
 function resizeCanvas() {
     let screenW = window.innerWidth;
     let screenH = window.innerHeight;
-
     let canvasSize = Math.min(screenW * 0.9, screenH * 0.7);
-
+    
+    // Lưu lại tileSize cũ để điều chỉnh vị trí người chơi
     let oldTileSize = tileSize;
 
     canvas.width = canvasSize;
     canvas.height = canvasSize;
-
     tileSize = Math.floor(canvas.width / cols);
 
-    // Cập nhật vị trí của người chơi dựa trên tỷ lệ thay đổi của tileSize
-    if (oldTileSize && tileSize !== oldTileSize) {
-        player.px = (player.x) * tileSize;
-        player.py = (player.y) * tileSize;
+    // Cập nhật vị trí pixel của người chơi theo tileSize mới
+    if (oldTileSize) {
+        player.px = player.x * tileSize;
+        player.py = player.y * tileSize;
+    } else { // Chạy lần đầu
+        player.px = player.x * tileSize;
+        player.py = player.y * tileSize;
     }
-    
     drawMaze();
 }
 resizeCanvas();
@@ -154,7 +156,6 @@ function generateMaze() {
         }
     }
     carve(1,1);
-
     maze[exit.y][exit.x] = "E";
     for (let i=0;i<15;i++){
         let gx=Math.floor(Math.random()*cols), gy=Math.floor(Math.random()*rows);
@@ -208,14 +209,13 @@ function updatePlayer(){
     if(player.moving){
         let dx = (player.tx * tileSize) - player.px;
         let dy = (player.ty * tileSize) - player.py;
+        let dist = Math.sqrt(dx*dx + dy*dy);
+        let speed = player.speed * tileSize;
 
-        if(Math.abs(dx)>player.speed*tileSize) player.px += Math.sign(dx)*player.speed*tileSize;
-        else player.px = player.tx * tileSize;
-
-        if(Math.abs(dy)>player.speed*tileSize) player.py += Math.sign(dy)*player.speed*tileSize;
-        else player.py = player.ty * tileSize;
-
-        if(Math.abs(player.px - player.tx*tileSize)<0.01 && Math.abs(player.py - player.ty*tileSize)<0.01){
+        if (dist > speed) {
+            player.px += (dx/dist) * speed;
+            player.py += (dy/dist) * speed;
+        } else {
             player.px = player.tx * tileSize;
             player.py = player.ty * tileSize;
             player.x = player.tx;
@@ -242,4 +242,3 @@ gameLoop();
 </script>
 </body>
 </html>
-
