@@ -64,10 +64,11 @@
             gap: 15px;
         }
         .btn {
-            width: 18px;
-            height: 18px;
-            max-width: auto;
-            max-height: auto;
+            /* SỬA LỖI Ở ĐÂY */
+            width: 18vw;
+            height: 18vw;
+            max-width: 80px;
+            max-height: 80px;
             font-size: 8vw;
         }
     }
@@ -113,18 +114,16 @@ function resizeCanvas() {
     let screenH = window.innerHeight;
     let canvasSize = Math.min(screenW * 0.9, screenH * 0.7);
     
-    // Lưu lại tileSize cũ để điều chỉnh vị trí người chơi
     let oldTileSize = tileSize;
 
     canvas.width = canvasSize;
     canvas.height = canvasSize;
     tileSize = Math.floor(canvas.width / cols);
 
-    // Cập nhật vị trí pixel của người chơi theo tileSize mới
     if (oldTileSize) {
         player.px = player.x * tileSize;
         player.py = player.y * tileSize;
-    } else { // Chạy lần đầu
+    } else {
         player.px = player.x * tileSize;
         player.py = player.y * tileSize;
     }
@@ -242,4 +241,3 @@ gameLoop();
 </script>
 </body>
 </html>
-
